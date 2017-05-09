@@ -58,9 +58,9 @@ class profile_stage(object):
 
         if self.detailed:
             if sys.version_info[0] == 3:
-                import io.StringIO as StringIO
+                from io import StringIO
             else:
-                import StringIO.StringIO as StringIO
+                from cStringIO import StringIO
             self.profiler.disable()
             s = StringIO()
             sortby = 'cumulative'
