@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import, division, print_function
+
 import io, os, sys
 
 import codecs
@@ -8,7 +10,6 @@ import gzip
 import math
 
 from clint.textui import progress
-from namedlist import namedlist
 
 from ux.io import *
 

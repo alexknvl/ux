@@ -1,13 +1,18 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import, division, print_function
+
 import io, os, sys
 
 import codecs
 import gzip
 import math
 
-from namedlist import namedlist
+if sys.version_info[0] == 3:
+    from namedlist import namedlist
+else:
+    from recordtype import recordtype as namedlist
 
 
 class SaveFilePos(object):
@@ -46,10 +51,10 @@ def get_file_object(file_handle):
     return file_handle
 
 
-LineLengthStats = recordtype(
+LineLengthStats = namedlist(
     'LineLengthStats',
-    ['count', 'sum', 'sum_of_squares'])
-FileStats = recordtype(
+    ['line_count', 'sum', 'sum_of_squares'])
+FileStats = namedlist(
     'FileStats',
     ['is_compressed',
      'underlying_file_size',
@@ -65,7 +70,7 @@ class CountIO(io.IOBase):
         self.last_line_extra = 0
 
         self.line_stats = LineLengthStats(
-            count=0,
+            line_count=0,
             sum=0,
             sum_of_squares=0)
 
@@ -111,7 +116,7 @@ class CountIO(io.IOBase):
 
                 if char == '\n':
                     length = self.last_line_extra
-                    self.line_stats.count += 1
+                    self.line_stats.line_count += 1
                     self.line_stats.sum += length
                     self.line_stats.sum_of_squares += length * length
                     self.last_line_extra = 0
@@ -150,10 +155,10 @@ class CountIO(io.IOBase):
 
     @property
     def line_count(self):
-        if self.line_stats.count == 0:
+        if self.line_stats.line_count == 0:
             return 1
 
-        line_length = self.line_stats.sum / self.line_stats.count
+        line_length = self.line_stats.sum / self.line_stats.line_count
         return self.size / line_length
 
 
@@ -495,7 +500,7 @@ def estimate_compression_ratio(input_file, max_error=0.001, probability=0.999,
                                bootstrap=16 * 1024 * 1024,
                                reset_pos=True):
     if not isinstance(input_file, gzip.GzipFile):
-        raise ValueError("gzip_file")
+        return 1.0
 
     with SaveFilePos(input_file, reset_pos):
         input_file.seek(0)
@@ -541,20 +546,20 @@ def estimate_line_length(input_file, max_error=0.001, probability=0.999,
 
         for i, line in enumerate(input_file):
             line_length = len(line)
-            stats.count += 1
+            stats.line_count += 1
             stats.sum += line_length
             stats.sum_of_squares += line_length * line_length
 
             if i < bootstrap_lines:
                 continue
 
-            variance = stats.sum_of_squares / stats.count - \
-                (stats.sum / stats.count)**2
-            sigma_squared = variance / stats.count
+            variance = stats.sum_of_squares / stats.line_count - \
+                (stats.sum / stats.line_count)**2
+            sigma_squared = variance / stats.line_count
             if k * sigma_squared < max_error:
-                return stats.sum / stats.count
+                return stats.sum / stats.line_count
 
-        return 0 if stats.sum == 0 else stats.sum / stats.count
+        return 0 if stats.sum == 0 else stats.sum / stats.line_count
 
 
 def estimate_line_count(input_file, max_error=0.001, probability=0.999,
