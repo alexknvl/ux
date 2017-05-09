@@ -57,8 +57,12 @@ class profile_stage(object):
                      self.end_memory - self.start_memory))
 
         if self.detailed:
+            if sys.version_info[0] == 3:
+                import io.StringIO as StringIO
+            else:
+                import StringIO.StringIO as StringIO
             self.profiler.disable()
-            s = io.StringIO()
+            s = StringIO()
             sortby = 'cumulative'
             ps = pstats.Stats(self.profiler, stream=s).sort_stats(sortby)
             ps.print_stats()

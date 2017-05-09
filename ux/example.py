@@ -3,7 +3,7 @@
 
 from __future__ import absolute_import, division, print_function
 
-import sys
+import sys, time
 
 from ux.profiling import profile_stage
 from ux.cli import line_reader
@@ -11,6 +11,10 @@ from ux.io import (estimate_compression_ratio, estimate_file_size,
                    estimate_line_length, estimate_line_count, read_file)
 
 def main(path):
+    with profile_stage('Doing something'):
+        a = list(range(100000))
+        time.sleep(10)
+
     with profile_stage('doing stuff'):
         with read_file(path) as f:
             print('Compression ratio: %s', estimate_compression_ratio(f))
