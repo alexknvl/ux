@@ -6,7 +6,7 @@ from __future__ import absolute_import, division, print_function
 import sys, time
 
 from ux.profiling import profile_stage
-from ux.cli import line_reader
+from ux.cli import line_reader, enumerate_progress
 from ux.io import (estimate_compression_ratio, estimate_file_size,
                    estimate_line_length, estimate_line_count, read_file)
 
@@ -25,6 +25,9 @@ def main(path):
             print()
             print('Reading the file... Press Ctrl-C to interrupt.')
         for line in line_reader(path):
+            pass
+
+        for i, line in enumerate_progress(range(1000000)):
             pass
 
 if __name__ == '__main__':

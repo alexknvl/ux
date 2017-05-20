@@ -35,3 +35,13 @@ def line_reader(path, label='', width=32, hide=None, every=100, codec='utf-8',
             yield line
 
     input_file.close()
+
+
+def enumerate_progress(lst, label='', width=32, hide=None, every=100, codec='utf-8'):
+    total = len(lst)
+
+    with progress.Bar(label=label, width=width, hide=hide, every=every,
+                      expected_size=total) as bar:
+        for i, item in enumerate(lst):
+            bar.show(i + 1, total)
+            yield i, item
