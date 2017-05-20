@@ -22,6 +22,9 @@ def enumerate_lines_with_progressbar(path, label='', limit=None,
     with progress.Bar(label=label, width=width, hide=hide, every=every,
                       expected_size=counter.line_count) as bar:
         for i, line in enumerate(reader):
+            if i == limit:
+                break
+
             if limit is None:
                 cnt = counter.line_count
             else:
