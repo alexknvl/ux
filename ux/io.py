@@ -1,18 +1,12 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-from __future__ import absolute_import, division, print_function
-
 import io, os, sys
-
 import codecs
 import gzip
 import math
 
-if sys.version_info[0] == 3:
-    from namedlist import namedlist
-else:
-    from recordtype import recordtype as namedlist
+from namedlist import namedlist
 
 
 class SaveFilePos(object):
@@ -29,8 +23,8 @@ class SaveFilePos(object):
         return False
 
     def __init__(self, file_handle, should_reset=True):
-        self.file_handle = file_handle
-        self.should_reset = should_reset
+        self.file_handle    = file_handle
+        self.should_reset   = should_reset
         self.saved_position = None
 
 
@@ -105,21 +99,33 @@ class CountIO(io.IOBase):
     def seekable(self):
         return False
 
+    def update_stats_line(self, length):
+        self.line_stats.line_count     += 1
+        self.line_stats.sum            += length
+        self.line_stats.sum_of_squares += length * length
+        self.last_line_extra            = 0
+
     def update_stats(self, real_read, data):
         self.file_stats.compressed_read_count += real_read
 
         if data is not None:
             self.file_stats.decompressed_read_count += len(data)
 
-            for char in data:
-                self.last_line_extra += 1
+            last = None
+            while True:
+                newline = data.find(b'\n', last)
 
-                if char == '\n':
-                    length = self.last_line_extra
-                    self.line_stats.line_count += 1
-                    self.line_stats.sum += length
-                    self.line_stats.sum_of_squares += length * length
-                    self.last_line_extra = 0
+                if last is None:
+                    last = -1
+
+                if newline == -1:
+                    self.last_line_extra += len(data) - (last + 1)
+                    break
+
+                length = self.last_line_extra + newline - (last + 1)
+                self.update_stats_line(length)
+                last = newline + 1
+
 
     def readline(self, limit=-1):
         pos0 = self.base0.tell()
@@ -495,7 +501,7 @@ class BiReaderSearch(object):
                 assert False, "Should be unreachable."
 
 
-def estimate_compression_ratio(input_file, max_error=0.001, probability=0.999,
+def estimate_compression_ratio(input_file, max_error=0.01, probability=0.99,
                                buf_size=1 * 1024 * 1024,
                                bootstrap=16 * 1024 * 1024,
                                reset_pos=True):
@@ -523,7 +529,7 @@ def estimate_compression_ratio(input_file, max_error=0.001, probability=0.999,
             return compressed / decompressed
 
 
-def estimate_file_size(input_file, max_error=0.001, probability=0.999,
+def estimate_file_size(input_file, max_error=0.01, probability=0.99,
                        reset_pos=True):
     with SaveFilePos(input_file, reset_pos):
         if isinstance(input_file, gzip.GzipFile):
@@ -535,8 +541,8 @@ def estimate_file_size(input_file, max_error=0.001, probability=0.999,
             return file_size(input_file, reset_pos=False)
 
 
-def estimate_line_length(input_file, max_error=0.001, probability=0.999,
-                         bootstrap_lines=100000,
+def estimate_line_length(input_file, max_error=0.01, probability=0.99,
+                         bootstrap_lines=10000,
                          reset_pos=True):
     with SaveFilePos(input_file, reset_pos):
         input_file.seek(0)
@@ -562,7 +568,7 @@ def estimate_line_length(input_file, max_error=0.001, probability=0.999,
         return 0 if stats.sum == 0 else stats.sum / stats.line_count
 
 
-def estimate_line_count(input_file, max_error=0.001, probability=0.999,
+def estimate_line_count(input_file, max_error=0.01, probability=0.99,
                         bootstrap_lines=10000, reset_pos=True):
     with SaveFilePos(input_file, reset_pos):
         input_file.seek(0)
