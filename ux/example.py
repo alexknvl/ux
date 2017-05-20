@@ -6,7 +6,7 @@ from __future__ import absolute_import, division, print_function
 import sys, time
 
 from ux.profiling import profile_stage
-from ux.cli import line_reader, enumerate_progress
+from ux.cli import enumerate_with_progressbar, enumerate_lines_with_progressbar
 from ux.io import (estimate_compression_ratio, estimate_file_size,
                    estimate_line_length, estimate_line_count, read_file)
 
@@ -24,10 +24,10 @@ def main(path):
             print('Line count       : %.1f' % estimate_line_count(f))
             print()
             print('Reading the file... Press Ctrl-C to interrupt.')
-        for line in line_reader(path):
+        for line in enumerate_lines_with_progressbar(path):
             pass
 
-        for i, line in enumerate_progress(range(1000000)):
+        for i, line in enumerate_with_progressbar(range(1000000)):
             pass
 
 if __name__ == '__main__':
