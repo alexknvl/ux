@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
+from typing import *
+
 import codecs
 
 from clint.textui import progress
@@ -8,9 +10,14 @@ from clint.textui import progress
 from ux.io import CountIO, read_file
 
 
-def enumerate_lines_with_progressbar(path, label='', limit=None,
-                                     width=32, hide=None, every=100,
-                                     codec='utf-8', skip_empty=False):
+def enumerate_lines_with_progressbar(path: str,
+                                     label: str='',
+                                     limit: Optional[int]=None,
+                                     width: int=32, hide=None,
+                                     every: int=100,
+                                     codec: str ='utf-8',
+                                     skip_empty: bool=False
+                                     ) -> None:
     if label is None:
         label = path
 

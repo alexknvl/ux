@@ -1,41 +1,74 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
+from typing import *
+
 import io, os, sys
 import codecs
 import gzip
 import math
+import errno
 
 from namedlist import namedlist
+
+def mkdir_p(path: str) -> None:
+    try:
+        os.makedirs(path)
+    except OSError as exc:  # Python >2.5
+        if exc.errno != errno.EEXIST or not os.path.isdir(path):
+            raise
+
+
+def file_output(*pathparts: str, **kwargs: str) -> IO[Any]:
+    mode     = kwargs.get('mode',     'wt+')
+    encoding = kwargs.get('encoding', 'utf-8')
+
+    path = os.path.join(*pathparts)
+    mkdir_p(os.path.dirname(path))
+    if os.path.splitext(path)[1] == '.gz':
+        return gzip.open(path, mode, encoding=encoding)
+    else:
+        return io.open(path, mode, encoding=encoding)
+
+
+def file_input(*pathparts: str, **kwargs: str) -> IO[Any]:
+    mode     = kwargs.get('mode',     'rt')
+    encoding = kwargs.get('encoding', 'utf-8')
+
+    path = os.path.join(*pathparts) # type: str
+    if os.path.splitext(path)[1] == '.gz':
+        return gzip.open(path, mode, encoding=encoding)
+    else:
+        return io.open(path, mode, encoding=encoding)
 
 
 class SaveFilePos(object):
     __slots__ = ['saved_position', 'file_handle', 'should_reset']
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         self.saved_position = self.file_handle.tell()
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
         if self.should_reset:
             self.file_handle.seek(self.saved_position)
 
         # Not suppressing exceptions.
         return False
 
-    def __init__(self, file_handle, should_reset=True):
+    def __init__(self, file_handle, should_reset: bool=True):
         self.file_handle    = file_handle
         self.should_reset   = should_reset
         self.saved_position = None
 
 
-def file_size(file_handle, reset_pos=True):
+def file_size(file_handle: IO[Any], reset_pos: bool=True) -> int:
     """Returns the file size."""
     with SaveFilePos(file_handle, reset_pos):
         file_handle.seek(0, 2)
         return file_handle.tell()
 
 
-def get_file_object(file_handle):
+def get_file_object(file_handle: IO[Any]) -> IO[Any]:
     """Returns the underlying file object."""
     while True:
         if isinstance(file_handle, gzip.GzipFile):
@@ -57,7 +90,7 @@ FileStats = namedlist(
 
 
 class CountIO(io.IOBase):
-    def __init__(self, base):
+    def __init__(self, base: IO[Any]) -> None:
         self.base = base
         self.base0 = get_file_object(base)
 
@@ -168,7 +201,7 @@ class CountIO(io.IOBase):
         return self.size / line_length
 
 
-def read_file(path):
+def read_file(path: str) -> IO[Any]:
     _, ext = os.path.splitext(path)
 
     if ext == '.gz':
@@ -501,10 +534,13 @@ class BiReaderSearch(object):
                 assert False, "Should be unreachable."
 
 
-def estimate_compression_ratio(input_file, max_error=0.01, probability=0.99,
-                               buf_size=1 * 1024 * 1024,
-                               bootstrap=16 * 1024 * 1024,
-                               reset_pos=True):
+def estimate_compression_ratio(input_file: IO[Any],
+                               max_error: float=0.01,
+                               probability: float=0.99,
+                               buf_size: int=1 * 1024 * 1024,
+                               bootstrap: int=16 * 1024 * 1024,
+                               reset_pos: bool=True
+                               ) -> float:
     if not isinstance(input_file, gzip.GzipFile):
         return 1.0
 
@@ -529,8 +565,11 @@ def estimate_compression_ratio(input_file, max_error=0.01, probability=0.99,
             return compressed / decompressed
 
 
-def estimate_file_size(input_file, max_error=0.01, probability=0.99,
-                       reset_pos=True):
+def estimate_file_size(input_file: IO[Any],
+                       max_error: float=0.01,
+                       probability: float=0.99,
+                       reset_pos: bool=True
+                       ) -> int:
     with SaveFilePos(input_file, reset_pos):
         if isinstance(input_file, gzip.GzipFile):
             size = file_size(input_file.myfileobj)
@@ -541,9 +580,12 @@ def estimate_file_size(input_file, max_error=0.01, probability=0.99,
             return file_size(input_file, reset_pos=False)
 
 
-def estimate_line_length(input_file, max_error=0.01, probability=0.99,
-                         bootstrap_lines=10000,
-                         reset_pos=True):
+def estimate_line_length(input_file: IO[Any],
+                         max_error: float=0.01,
+                         probability: float=0.99,
+                         bootstrap_lines: int=10000,
+                         reset_pos: bool=True
+                         ) -> float:
     with SaveFilePos(input_file, reset_pos):
         input_file.seek(0)
 
@@ -568,8 +610,12 @@ def estimate_line_length(input_file, max_error=0.01, probability=0.99,
         return 0 if stats.sum == 0 else stats.sum / stats.line_count
 
 
-def estimate_line_count(input_file, max_error=0.01, probability=0.99,
-                        bootstrap_lines=10000, reset_pos=True):
+def estimate_line_count(input_file: IO[Any],
+                        max_error: float=0.01,
+                        probability: float=0.99,
+                        bootstrap_lines: int=10000,
+                        reset_pos: bool=True
+                        ) -> int:
     with SaveFilePos(input_file, reset_pos):
         input_file.seek(0)
 
