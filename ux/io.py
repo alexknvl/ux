@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from typing import *
+from typing.io import IO
 
 import io, os, sys
 import codecs
